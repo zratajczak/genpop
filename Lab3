@@ -1,0 +1,95 @@
+mkdir Lab3 && cd Lab3  
+
+ln -s /home/st15/GEiP/LAB1/scaffold5.fasta* . 
+
+screen 
+conda activate GEiP
+
+galgal=/home/mkonczal/Teaching/GEiP/Data/galGal6 
+
+scaffold=scaffold5.fasta 
+
+blastn -query ${scaffold} -db ${galgal}/Gallus_gallus.GRCg6a.dna_rm.toplevel.fa -outfmt 6 > Scaffold5Chicken.blastout
+
+cut -f2 Scaffold5Chicken.blastout 
+
+cut -f2 Scaffold5Chicken.blastout | sort | uniq -c 
+
+scores=/home/mkonczal/Teaching/GEiP/utilities/HoxD55 
+
+hom_chicken_chr=6
+
+lastz ${galgal}/split/${hom_chicken_chr}.fa ${scaffold} --ambiguous=iupac --hspthresh=2200 --inner=2000 --ydrop=3400 --gappedthresh=10000 --scores=${scores} --chain --format=axt > bGalGal6_chr${hom_chicken_chr}.axt 
+
+#TWORZENIE LANCUCHA
+
+alignment=bGalGal6_chr${hom_chicken_chr}.axt 
+
+chicken_2bit=${galgal}/Gallus_gallus.GRCg6a.dna_rm.toplevel.2bit 
+
+faToTwoBit scaffold5.fasta scaffold5.2bit 
+
+biegus_2bit=scaffold5.2bit 
+
+##chaining
+
+axtChain -minscore=5000 -linearGap=loose $alignment $chicken_2bit $biegus_2bit bgalgalChr${hom_chicken_chr}_scaff5.chain 
+
+##sortiwanie
+
+chainSort bgalgalChr${hom_chicken_chr}_scaff5.chain sorted_bgalgalChr${hom_chicken_chr}_scaff5.chain
+
+grep "chain" sorted_bgalgalChr${hom_chicken_chr}_scaff5.chain | wc -l 
+
+##liczba lancuchow = 1158
+
+##filtrowanie lancuchow
+
+scaffold biegusa: scaffold5.fasta 
+plik zawierający długość scaffoldu biegusa: scaffold5.chrom.size 
+chromosom kury: 6.fa 
+plik zawierający długość chromosomu kury: X6.chrom.size
+
+
+cp /home/mkonczal/Teaching/GEiP/Data/galGal6/split/6.fa .
+
+cat 6.fa | grep -v '>' | tr -d '\n' | wc -c
+
+36374701
+
+chainNet sorted_bgalgalChr${hom_chicken_chr}_scaff5.chain 6.chrom.size scaffold5.chrom.size all.net /dev/null 
+
+netChainSubset all.net sorted_bgalgalChr${hom_chicken_chr}_scaff5.chain galGalChr${hom_chicken_chr}ToSBS_Scaff5.over.chain 
+
+gzip galGalChr${hom_chicken_chr}ToSBS_Scaff5.over.chain 
+
+chCADD_dir=/home/mkonczal/Teaching/GEiP/Data/chCADD-scores 
+
+mkdir chCADD
+cd chCADD
+
+cp ${chCADD_dir}/Header.txt . 
+cp ${chCADD_dir}/6.txt.gz . 
+cat Header.txt > chr6_chCADD.tsv 
+zcat 6.txt.gz >> chr6_chCADD.tsv 
+
+awk '{print $1,$2-1,$2,$3,$4,$5}' chr6_chCADD.tsv > chr6_chCADD.1based.bed 
+
+rm chr6_chCADD.tsv 
+
+##CROSS MAP
+
+conda activate crossmap 
+
+scaffold=scaffold5
+
+CrossMap bed galGalChr${hom_chicken_chr}ToSBS_Scaff5.over.chain.gz ~/GEiP/LAB3/chCADD/chr${hom_chicken_chr}_chCADD.1based.bed | head  
+
+
+CrossMap bed galGalChr${hom_chicken_chr}ToSBS_Scaff5.over.chain.gz ~/GEiP/LAB3/chCADD/chr${hom_chicken_chr}_chCADD.1based.bed | grep ${scaffold} | grep -v "Unmap" | cut -f 3,4,5,6,7,8 > chr${hom_chicken_chr}-SBS_CADD.bed 
+
+
+
+
+
+
