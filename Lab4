@@ -1,0 +1,183 @@
+
+VCF1_f=/home/st15/GEiP/LAB2/out.forward_C_ruf_08.filtered.vcf 
+VCF2_f=/home/st15/GEiP/LAB2/out.forward_C_pyg_22.filtered.vcf 
+
+VCF1_f=/home/st15/GEiP/LAB2/out.reverse.filtered.vcf 
+VCF2_f=/home/st15/GEiP/LAB2/out.reverse_pyg.filtered.vcf 
+
+conda activate crossmap 
+
+cd C_ruf_08
+
+vcf2bed --max-mem 4G < ${VCF1_f} > vcf_C_ruf_08.forward.bed 
+
+vcf2bed --max-mem 4G < ${VCF1_f} > vcf_C_ruf_08.reverse.bed 
+
+
+cd C_pyg_22
+
+vcf2bed --max-mem 4G < ${VCF2_f} > vcf_C_pyg_22.forward.bed 
+
+vcf2bed --max-mem 4G < ${VCF2_f} > vcf_C_pyg_22.reverse.bed 
+
+
+###USUWANIE 
+
+grep -v "INDEL" vcf_C_pyg_22.forward.bed > vcf_C_pyg_22_forward_indelRm.bed 
+
+grep -v "INDEL" vcf_C_ruf_08.forward.bed > vcf_C_ruf_08_forward_indelRm.bed
+
+
+grep -v "INDEL" vcf_C_pyg_22.reverse.bed > vcf_C_pyg_22_reverse_indelRm.bed 
+
+grep -v "INDEL" vcf_C_ruf_08.reverse.bed > vcf_C_ruf_08_reverse_indelRm.bed
+
+
+
+## INTERSEKCJA
+
+CADD=/home/st15/GEiP/LAB3/chr6-SBS_CADD.bed
+bed=vcf_C_pyg_22_forward_indelRm.bed 
+
+ls
+
+
+bedtools intersect -a $CADD -b $bed -wa -wb > vcf_C_pyg_22_forward_indelRm_intersect.bed 
+
+
+bedtools intersect -a $CADD -b $bed -wa -wb > vcf_C_pyg_22_reverse_indelRm_intersect.bed 
+
+_________-
+
+bed2=vcf_C_ruf_08_forward_indelRm.bed 
+
+bed2=vcf_C_ruf_08_reverse_indelRm.bed 
+
+
+bedtools intersect -a $CADD -b $bed2 -wa -wb > vcf_C_ruf_08_forward_indelRm_intersect.bed 
+
+bedtools intersect -a $CADD -b $bed2 -wa -wb > vcf_C_ruf_08_reverse_indelRm_intersect.bed 
+
+
+
+###SCRIPT PATH
+
+script_path=/home/mkonczal/Teaching/GEiP/scripts 
+
+awk -v b=6 -v e=100 -f ${script_path}/SNP_check_forward.awk vcf_C_pyg_22_forward_indelRm_intersect.bed > vcf_C_pyg_22_forward_indelRm_intersect_annotated.bed 
+
+
+awk -v b=6 -v e=100 -f ${script_path}/SNP_check_forward.awk vcf_C_ruf_08_forward_indelRm_intersect.bed > vcf_C_ruf_08_forward_indelRm_intersect_annotated.bed 
+
+
+script_path=/home/mkonczal/Teaching/GEiP/scripts 
+
+awk -v b=6 -v e=100 -f ${script_path}/SNP_check_reverse.awk vcf_C_pyg_22_reverse_indelRm_intersect.bed > vcf_C_pyg_22_reverse_indelRm_intersect_annotated.bed 
+
+
+awk -v b=6 -v e=100 -f ${script_path}/SNP_check_reverse.awk vcf_C_ruf_08_reverse_indelRm_intersect.bed > vcf_C_ruf_08_reverse_indelRm_intersect_annotated.bed 
+
+
+
+cut -f 23 vcf_C_pyg_22_forward_indelRm_intersect_annotated.bed | sort | uniq -c 
+
+cut -f 23 vcf_C_ruf_08_forward_indelRm_intersect_annotated.bed | sort | uniq -c 
+
+
+cut -f 23 vcf_C_pyg_22_reverse_indelRm_intersect_annotated.bed | sort | uniq -c 
+
+cut -f 23 vcf_C_ruf_08_reverse_indelRm_intersect_annotated.bed | sort | uniq -c 
+
+
+script_path=/home/mkonczal/Teaching/GEiP/scripts
+
+
+awk -v b=6 -v e=100 -f ${script_path}/SNP_check_forward.awk vcf_C_pyg_22_reverse_indelRm_intersect.bed > vcf_C_pyg_22_reverse_indelRm_intersect_OrientedReverse.bed
+
+awk -v b=6 -v e=100 -f ${script_path}/SNP_check_forward.awk vcf_C_ruf_08_reverse_indelRm_intersect.bed > vcf_C_ruf_08_reverse_indelRm_intersect_OrientedReverse.bed
+
+######TERAZ 11 PODPUNKT ADNOTACJA TYCH STWORZONYCH I ODPOWIADANIE NA PYTANKA
+
+awk -v b=6 -v e=100 -f ${script_path}/SNP_check_reverse.awk vcf_C_pyg_22_reverse_indelRm_intersect_OrientedReverse.bed > vcf_C_pyg_22_reverse_indelRm_intersect_OrientedReverse_annotated.bed 
+
+********
+script_path= /home/mkonczal/Teaching/GEiP/scripts
+awk -v b=6 -v e=100 -f ${script_path}/Orient_conversion_reverse_mod.awk vcf_C_pyg_22_forward_indelRm_intersect.bed > vcf_C_pyg_22_forward_indelRm_intersect_OrientedReverse.bed
+
+********
+
+awk -v b=6 -v e=100 -f ${script_path}/SNP_check_reverse.awk vcf_C_ruf_08_reverse_indelRm_intersect_OrientedReverse.bed > vcf_C_ruf_08_reverse_indelRm_intersect_OrientedReverse_annotated.bed 
+
+
+awk '$23 == "SNP_is_ALT_pp=ref"' vcf_C_pyg_22_reverse_indelRm_intersect_annotated.bed > vcf_C_pyg_22_reverse_indelRm_intersect_annotated_SNP_is_alt.bed 
+
+awk '$23 == "SNP_is_ALT_pp=ref"' vcf_C_pyg_22_reverse_indelRm_intersect_annotated.bed > vcf_C_pyg_22_reverse_indelRm_intersect_annotated_SNP_is_alt.bed 
+
+
+awk -e ' $20 ~ /^0\/0/ ' vcf_C_pyg_22_reverse_indelRm_intersect_annotated_SNP_is_alt.bed | cut -f 6 |  paste -sd+ - | bc 
+
+
+awk -e ' $20 ~ /^0\/1/ ' vcf_C_pyg_22_reverse_indelRm_intersect_annotated_SNP_is_alt.bed | cut -f 6 |  paste -sd+ - | bc 
+
+awk -e ' $20 ~ /^1\/1/ ' vcf_C_pyg_22_reverse_indelRm_intersect_annotated_SNP_is_alt.bed | cut -f 6 |  paste -sd+ - | bc 
+
+
+
+
+awk '$23 == "SNP_is_ALT_pp=ref"' vcf_C_ruf_08_reverse_indelRm_intersect_annotated.bed > vcf_C_ruf_08_reverse_indelRm_intersect_annotated_SNP_is_alt.bed 
+
+
+awk -e ' $20 ~ /^0\/0/ ' vcf_C_ruf_08_reverse_indelRm_intersect_annotated_SNP_is_alt.bed | cut -f 6 |  paste -sd+ - | bc
+
+awk -e ' $20 ~ /^0\/1/ ' vcf_C_ruf_08_reverse_indelRm_intersect_annotated_SNP_is_alt.bed | cut -f 6 |  paste -sd+ - | bc
+
+awk -e ' $20 ~ /^1\/1/ ' vcf_C_ruf_08_reverse_indelRm_intersect_annotated_SNP_is_alt.bed | cut -f 6 |  paste -sd+ - | bc
+
+
+
+
+
+
+cd /home/st15/GEiP/LAB4/C_ruf_08/
+ 
+# przepisanie na forward
+script_path=/home/mkonczal/Teaching/GEiP/scripts
+awk -v b=6 -v e=100 -f ${script_path}/Orient_conversion_reverse_mod.awk vcf_C_ruf_08_reverse_indelRm_intersect.bed > vcf_C_ruf_08_reverse_indelRm_intersect_OrientedReverse.bed
+ 
+# adnotacja
+awk -v b=6 -v e=100 -f ${script_path}/SNP_check_forward.awk vcf_C_ruf_08_reverse_indelRm_intersect_OrientedReverse.bed > vcf_C_ruf_08_reverse_indelRm_intersect_OrientedReverse_annotated.bed
+ 
+# policzenie 
+cut -f 23 vcf_C_ruf_08_reverse_indelRm_intersect_OrientedReverse_annotated.bed | sort | uniq -c
+
+
+awk '$22 == "SNP_is_ALT_pp=ref"' vcf_C_ruf_08_reverse_indelRm_intersect_OrientedReverse_annotated.bed > vcf_C_ruf_08_SNP_is_alt.bed
+
+
+
+awk -e ' $20 ~ /^0\/0/ ' vcf_C_ruf_08_forward_indelRm_intersect_annotated_SNP_is_alt.bed | cut -f 6 |  paste -sd+ - | bc
+
+awk -e ' $20 ~ /^0\/1/ ' vcf_C_ruf_08_forward_indelRm_intersect_annotated_SNP_is_alt.bed | cut -f 6 |  paste -sd+ - | bc
+
+awk -e ' $20 ~ /^1\/1/ ' vcf_C_ruf_08_forward_indelRm_intersect_annotated_SNP_is_alt.bed | cut -f 6 |  paste -sd+ - | bc
+
+
+
+
+
+
+
+
+# przepisanie na forward
+script_path=/home/mkonczal/Teaching/GEiP/scripts
+awk -v b=6 -v e=100 -f ${script_path}/Orient_conversion_reverse_mod.awk vcf_C_pyg_22_reverse_indelRm_intersect.bed > vcf_C_pyg_22_reverse_indelRm_intersect_OrientedReverse.bed
+ 
+# adnotacja
+awk -v b=6 -v e=100 -f ${script_path}/SNP_check_forward.awk vcf_C_pyg_22_reverse_indelRm_intersect_OrientedReverse.bed > vcf_C_pyg_22_reverse_indelRm_intersect_OrientedReverse_annotated.bed
+ 
+# policzenie 
+cut -f 23 vcf_C_pyg_22_reverse_indelRm_intersect_OrientedReverse_annotated.bed | sort | uniq -c
+
+awk '$22 == "SNP_is_ALT_pp=ref"' vcf_C_pyg_22_reverse_indelRm_intersect_annotated.bed > vcf_C_pyg_22_reverse_indelRm_intersect_annotated_SNP_is_alt.bed
+
+
