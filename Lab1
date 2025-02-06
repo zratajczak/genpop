@@ -1,0 +1,147 @@
+zad 1 
+
+seqkit grep -p "scaffold5" 
+/home/mkonczal/Teaching/GEiP/Data/Reference/SBS_final.scaffolds.fasta > scaffold5.fasta
+
+ seqkit grep -p "scaffold5" $REF > scaffold5.fasta
+ samtools faidx scaffold5.fasta
+
+ cut -f 2 scaffold5.fasta.fai
+11272743
+
+
+C_ruf_08        SRS3209983      SRR7054138
+C_ruf_08        SRS3209983      SRR7054157
+
+C_pyg_22        SRS3209985      SRR7054140
+C_pyg_22        SRS3209985      SRR7054154
+
+cp ${FASTQ_DIR}/SRR7054140/SRR7054140_pass_1.fastq.gz . 
+cp ${FASTQ_DIR}/SRR7054140/SRR7054140_pass_2.fastq.gz . 
+
+cp ${FASTQ_DIR}/SRR7054154/SRR7054154_pass_1.fastq.gz . 
+cp ${FASTQ_DIR}/SRR7054154/SRR7054154_pass_2.fastq.gz . 
+
+f1=SRR7054140_pass_1.fastq.gz
+f2=SRR7054140_pass_2.fastq.gz
+f3=SRR7054154_pass_1.fastq.gz
+f4=SRR7054154_pass_2.fastq.gz
+
+fastqc
+fastqc $f3 $f4
+ls -lh
+
+fastp -i $f1 -I $f2 -o SRR7054140_pass_1.filt.fastq -O SRR7054140_pass_2.filt.fastq 
+
+fastp -i $f3 -I $f4 -o SRR7054154_pass_1.filt.fastq -O SRR7054154_pass_2.filt.fastq 
+
+fastqc SRR7054140_pass_1.filt.fastq SRR7054140_pass_2.filt.fastq 
+
+fastqc SRR7054154_pass_1.filt.fastq SRR7054154_pass_2.filt.fastq 
+
+bwa index scaffold5.fasta 
+
+bwa mem -t 10 -R '@RG\tID:SRR7054140\tSM:C_pyg_22\tLB:SRR7054140\tPL:ILLUMINA\tPU:lib1_unit' scaffold5.fasta SRR7054140_pass_1.filt.fastq SRR7054140_pass_2.filt.fastq |  samtools view -F 4 -o SRR7054140.Mapped.bam
+
+
+bwa mem -t 10 -R '@RG\tID:SRR7054154\tSM:C_pyg_22\tLB:SRR7054154\tPL:ILLUMINA\tPU:lib1_unit' scaffold5.fasta SRR7054154_pass_1.filt.fastq SRR7054154_pass_2.filt.fastq |  samtools view -F 4 -o SRR7054154.Mapped.bam
+
+rm $f1 $f2  
+rm $f3 $f4 
+
+samtools sort -T bam SRR7054140.Mapped.bam > SRR7054140.Mapped.sorted.bam 
+
+samtools sort -T bam SRR7054154.Mapped.bam > SRR7054154.Mapped.sorted.bam 
+
+rm SRR7054140.Mapped.bam 
+rm SRR7054154.Mapped.bam 
+
+picard MarkDuplicates REMOVE_DUPLICATES=true REMOVE_SEQUENCING_DUPLICATES=true AS=true I=SRR7054140.Mapped.sorted.bam M=test.metric_SRR7054140.txt O=SRR7054140.Mapped.sorted_DupRmv.bam 2> MarkDup_SRR7054140.log
+
+picard MarkDuplicates REMOVE_DUPLICATES=true REMOVE_SEQUENCING_DUPLICATES=true AS=true I=SRR7054154.Mapped.sorted.bam M=test.metric_SRR7054154.txt O=SRR7054154.Mapped.sorted_DupRmv.bam 2> MarkDup_SRR7054154.log
+
+rm SRR7054140.Mapped.sorted.bam 
+rm SRR7054154.Mapped.sorted.bam 
+
+samtools index SRR7054140.Mapped.sorted_DupRmv.bam 
+samtools index SRR7054154.Mapped.sorted_DupRmv.bam 
+
+samtools flagstats SRR7054140.Mapped.sorted_DupRmv.bam 
+
+samtools merge -r C_pyg_22.bam SRR7054140.Mapped.sorted_DupRmv.bam SRR7054154.Mapped.sorted_DupRmv.bam 
+
+samtools index C_pyg_22.bam 
+
+samtools tview --reference scaffold5.fasta C_pyg_22.bam 
+
+##nowe na gorze od fastp
+
+(GEiP) st15@bzc1:~/GEiP/LAB1$ cp ${FASTQ_DIR}/SRR7054138/SRR7054138_pass_1.fastq.gz .
+(GEiP) st15@bzc1:~/GEiP/LAB1$ ls
+scaffold5.fasta  scaffold5.fasta.fai  SRR7054138_pass_1.fastq.gz
+(GEiP) st15@bzc1:~/GEiP/LAB1$ cp ${FASTQ_DIR}/SRR7054138/SRR7054138_pass_2.fastq.gz .
+(GEiP) st15@bzc1:~/GEiP/LAB1$ less $SAMPLES
+(GEiP) st15@bzc1:~/GEiP/LAB1$ ls
+scaffold5.fasta      SRR7054138_pass_1.fastq.gz
+scaffold5.fasta.fai  SRR7054138_pass_2.fastq.gz
+(GEiP) st15@bzc1:~/GEiP/LAB1$ cp ${FASTQ_DIR}/SRR7054157/SRR7054157_pass_1.fastq.gz .
+(GEiP) st15@bzc1:~/GEiP/LAB1$ cp ${FASTQ_DIR}/SRR7054157/SRR7054157_pass_2.fastq.gz .
+
+##FASTQC kontrola jakości
+(GEiP) st15@bzc1:~/GEiP/LAB1$ f1=SRR7054138_pass_1.fastq.gz
+(GEiP) st15@bzc1:~/GEiP/LAB1$ f2=SRR7054138_pass_2.fastq.gz
+(GEiP) st15@bzc1:~/GEiP/LAB1$ f3=SRR7054157_pass_1.fastq.gz
+(GEiP) st15@bzc1:~/GEiP/LAB1$ f4=SRR7054157_pass_2.fastq.gz
+fastqc $f1 $f2
+fastqc $f3 $f4
+
+##FILTROWANIE DANYCH
+
+fastp -i $f1 -I $f2 -o SRR7054138_pass_1.filt.fastq -O 
+SRR7054138_pass_1.filt.fastq 
+
+fastp -i $f3 -I $f4 -o SRR7054157_pass_1.filt.fastq -O 
+SRR7054157_pass_2.filt.fastq 
+
+##mapowanie 
+Czemu służy parametr -R w poleceniu bwa mem? 
+Do czego służy opcja –F 4? zachować tyko odczyty które zmapowały się do scaffoldu
+Dlaczego między bwa mem i samtools znajduje się „|”?  
+piking albo piping/potokowanie pomija pośrednie pliki, daje ten poprzedni końcowy
+
+bwa mem -t 10 -R '@RG\tID:SRR7054138\tSM:C_ruf_08\tLB:SRR7054138\tPL:ILLUMINA\tPU:lib1_unit' scaffold5.fasta SRR7054138_pass_1.filt.fastq SRR7054138_pass_2.filt.fastq |  samtools view -F 4 -o SRR7054138.Mapped.bam
+
+bwa mem -t 10 -R '@RG\tID:SRR7054157\tSM:C_ruf_08\tLB:SRR7054157\tPL:ILLUMINA\tPU:lib1_unit' scaffold5.fasta SRR7054157_pass_1.filt.fastq SRR7054157_pass_2.filt.fastq |  samtools view -F 4 -o SRR7054157.Mapped.bam
+
+
+samtools sort -T bam SRR7054138.Mapped.bam > SRR7054138.Mapped.sorted.bam
+rm SRR7054138.Mapped.bam
+
+samtools sort -T bam SRR7054157.Mapped.bam > SRR7054157.Mapped.sorted.bam
+rm SRR7054157.Mapped.bam
+
+
+picard MarkDuplicates REMOVE_DUPLICATES=true REMOVE_SEQUENCING_DUPLICATES=true AS=true I=SRR7054138.Mapped.sorted.bam M=test.metric_SRR7054138.txt O=SRR7054138.Mapped.sorted_DupRmv.bam 2> MarkDup_SRR7054138.log
+
+rm SRR7054138.Mapped.sorted.bam
+
+
+picard MarkDuplicates REMOVE_DUPLICATES=true REMOVE_SEQUENCING_DUPLICATES=true AS=true I=SRR7054157.Mapped.sorted.bam M=test.metric_SRR7054157.txt O=SRR7054157.Mapped.sorted_DupRmv.bam 2> MarkDup_SRR7054157.log
+
+rm SRR7054157.Mapped.sorted.bam
+
+samtools index SRR7054138.Mapped.sorted_DupRmv.bam
+
+samtools index SRR7054157.Mapped.sorted_DupRmv.bam
+
+
+samtools flagstats SRR7054138.Mapped.sorted_DupRmv.bam
+
+samtools flagstats SRR7054157.Mapped.sorted_DupRmv.bam 
+
+
+samtools merge -r C_ruf_08.bam SRR7054138.Mapped.sorted_DupRmv.bam SRR7054157.Mapped.sorted_DupRmv.bam
+
+samtools index C_ruf_08.bam
+
+samtools tview --reference scaffold5.fasta C_ruf_08.bam 
