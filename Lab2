@@ -1,0 +1,71 @@
+faToTwoBit home/st15/GEiP/LAB1/scaffold5.fasta scaffold5.2bit 
+
+twoBitInfo scaffold5.2bit sizes.tab
+cd..
+
+ln -s /home/mkonczal/Teaching/GEiP/Data/UCE-probes/uce-5k-probes.fasta .
+
+
+samtools faidx uce-5k-probes.fasta 
+
+bwa index uce-5k-probes.fasta 
+
+UCEprobe=/home/mkonczal/Lab2/uce-5k-probes.fasta
+
+
+phyluce_probe_run_multiple_lastzs_sqlite --db scaffold5.sqlite \
+--output scaffold5-genome-lastz \
+--scaffoldlist scaffold5 \
+--genome-base-path ./ \
+--probefile ${UCEprobe} \
+--cores 10
+
+nano scaffold5.conf
+
+phyluce_probe_slice_sequence_from_genomes --lastz scaffold5-genome-lastz --flank 1000 --output OUT --conf scaffold5.conf --name-pattern uce-5k-probes.fasta_v_scaffold5.lastz.clean 
+
+mkdir UCE_regions 
+
+
+grep "uce" /home/st15/GEiP/LAB2/OUT/scaffold5.fasta |  cut -d '|' -f 2,3,4,6 | sed -e 's/|/\t/g' | sed -e 's/contig://g' | sed -e 's/slice://g'| sed -e 's/uce://g' | sed -e 's/orient://g' | sed -e 's/uce-/uce_/g' | sed -e s/"'"//g  | sed -e 's/{+}/forward/g' | sed -e 's/{-}/reverse/g'| sed -e 's/-/\t/g' > /home/st15/GEiP/LAB2/UCE_regions/scaffold5_UCE_regions.txt 
+
+mkdir UCE_regions/forward 
+mkdir UCE_regions/reverse 
+
+grep 'forward' UCE_regions/scaffold5_UCE_regions.txt | cut -f 1,2,3 > UCE_regions/forward/scaffold5_UCE_forward_orient_regions.txt 
+
+grep 'reverse' UCE_regions/scaffold5_UCE_regions.txt | cut -f 1,2,3 > UCE_regions/reverse/scaffold5_UCE_reverse_orient_regions.txt
+
+/home/st15/GEiP/LAB2/UCE_regions
+
+########reverse
+
+UCE=/home/st15/GEiP/LAB2/UCE_regions/reverse/scaffold5_UCE_reverse_orient_regions.txt 
+REF=/home/st15/GEiP/LAB1/scaffold5.fasta 
+BAM=/home/st15/GEiP/LAB1/C_ruf_08.bam 
+
+samtools mpileup -l ${UCE} -f ${REF} ${BAM} > out.reverse.mpileup 
+
+bcftools mpileup --threads 5 -Ou -Q 30 -q 30 -C 50 -a AD,DP -R ${UCE} -f ${REF} ${BAM} | bcftools call --threads 10 -c -Ob > out.reverse.bcf 
+
+bcftools mpileup --threads 10 -Ou -Q 30 -q 30 -C 50 -a AD,DP -R ${UCE} -f ${REF} -b bam_list.txt | bcftools call --threads 10 -c -Ob > out.forward_5samples.bcf 
+
+
+
+BCF=out.reverse.bcf 
+bcftools query -f '%QUAL\t%MQ\t%DP\n' ${BCF} > Stats_QualMQDP.txt 
+bcftools stats ${BCF} > Stats.stat.txt 
+
+##################forward
+
+UCE=/home/st15/GEiP/LAB2/UCE_regions/forward/scaffold5_UCE_forward_orient_regions.txt 
+
+samtools mpileup -l ${UCE} -f ${REF} ${BAM} > out.forward.mpileup 
+
+bcftools mpileup --threads 5 -Ou -Q 30 -q 30 -C 50 -a AD,DP -R ${UCE} -f ${REF} ${BAM} | bcftools call --threads 10 -c -Ob > out.forward.bcf 
+
+BCF=out.forward.bcf 
+bcftools query -f '%QUAL\t%MQ\t%DP\n' ${BCF} > Stats_forward_QualMQDP.txt 
+
+bcftools stats ${BCF} > Stats_forward.stat.txt 
+
